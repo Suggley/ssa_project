@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
@@ -28,6 +29,8 @@ class Profile(models.Model):
     first_name = models.CharField(max_length=30)
     surname = models.CharField(max_length=30)
     nickname = models.CharField(max_length=30, unique=True, null=False, blank=False)
+    max_spend = models.DecimalField(max_digits=10, decimal_places=2, default=100.00)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=100.00)
 
     def clean(self):
         validate_unique_nickname(self.nickname, instance=self)
@@ -38,3 +41,11 @@ class Profile(models.Model):
 
     def __str__(self):
         return self.user.username
+    
+class Transaction(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
+    amount = models.DecimalField(max_digits=10, decimal_places=2 ,default=0.00)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.user.username} - ${self.amount:.2f}"

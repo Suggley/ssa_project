@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import Profile
+from django.core.exceptions import ValidationError
 
 class UserRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -26,3 +27,22 @@ class UserRegistrationForm(UserCreationForm):
             profile.nickname = self.cleaned_data['nickname']
             profile.save()
         return user
+
+class TopUpForm(forms.Form):
+    amount = forms.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        min_value=0.01, 
+        label="Amount to Top-Up",
+        error_messages={
+            'min_value': "Please enter an amount greater than $0.00.",
+            'invalid': "Enter a valid amount in dollars and cents.",
+        }
+    )
+
+    # Optional: Custom clean method if additional backend validation is required
+    def clean_amount(self):
+        amount = self.cleaned_data.get('amount')
+        if amount <= 0:
+            raise ValidationError("Amount must be greater than zero.")
+        return amount

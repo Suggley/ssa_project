@@ -5,6 +5,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import UserRegistrationForm
+from .forms import TopUpForm
+from .models import Transaction
 
 def register(request):
     if request.method == "POST":
@@ -38,3 +40,44 @@ def logout_view(request):
     logout(request)
     messages.success(request, "Successfully logged out.")
     return redirect('users:login')
+
+def user_view(request):
+    profile = request.user.profile  # Get the logged-in user's profile
+    return render(request, 'users/user.html', {'balance': profile.balance})
+
+def user(request):
+    profile = request.user.profile
+    return render(request, 'users/user.html',
+    {
+        'user': request.user,
+        'balance': profile.balance
+    })
+
+@login_required
+def top_up_balance(request):
+    if request.method == 'POST':
+        form = TopUpForm(request.POST)
+        if form.is_valid():
+            
+            amount = form.cleaned_data['amount']
+            
+            profile = request.user.profile
+            profile.balance += amount
+            profile.save()
+
+            
+            Transaction.objects.create(user=request.user, amount=amount)
+
+           
+            messages.success(request, f"Your balance has been topped up by ${amount:.2f}.")
+            
+            return redirect('users:user')  
+
+        else:
+            
+            return render(request, 'users/top_up.html', {'form': form})
+    
+    else:
+     
+        form = TopUpForm()
+        return render(request, 'users/top_up.html', {'form': form})
